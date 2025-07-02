@@ -26,12 +26,12 @@ public class Config {
             "open GUI editor", // description
             InputUtil.Type.KEYSYM,        // Input type (keyboard)
             InputUtil.fromTranslationKey("key.keyboard.k").getCode(),
-            "wynntools"    // Category for the keybinding
+            "sidly"    // Category for the keybinding
     );
 
-    private static final Path CONFIG_PATH = Paths.get("config", "wynntoolsconfigv2.json");
+    private static final Path CONFIG_PATH = Paths.get("config", "/sidly/main config");
     public static ConfigClassHandler<Config> HANDLER = ConfigClassHandler.createBuilder(Config.class)
-            .id(Identifier.of("wynntools", "config"))
+            .id(Identifier.of("sidly", "config"))
                     .serializer(config -> GsonConfigSerializerBuilder.create(config)
                             .setPath(CONFIG_PATH)
                             .setJson5(true)
@@ -94,5 +94,9 @@ public class Config {
     public static void addOption(String category, Option<?> option) {
         if (!categories.containsKey(category)) categories.put(category, new ArrayList<>());
         categories.get(category).add(option);
+    }
+
+    public static Config get() {
+        return HANDLER.instance();
     }
 }

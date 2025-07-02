@@ -91,5 +91,14 @@ publishing {
 		// Notice: This block does NOT have the same function as the block in the top level.
 		// The repositories here will be used for publishing your artifact, not for
 		// retrieving dependencies.
+
+		maven {
+			name = "GitHubPackages"
+			url = uri("https://maven.pkg.github.com/SidOfThe7Cs/sidlys-api")
+			credentials {
+				username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_ACTOR")
+				password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
+			}
+		}
 	}
 }

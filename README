@@ -1,0 +1,23 @@
+add this to the repository in build.gradle:
+maven {
+		name = "GitHubPackages"
+		url = uri("https://maven.pkg.github.com/SidOfThe7Cs/sidlys-api")
+		credentials {
+			username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_ACTOR")
+			password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
+		}
+	}
+	maven { url "https://maven.terraformersmc.com/releases" }
+	maven { url "https://maven.isxander.dev/releases" }
+
+add this to dependencies in build.gradle:
+	modImplementation "sidly.api:sidlys-api-mod:${project.sidly_api_version}"
+	modImplementation "com.terraformersmc:modmenu:${project.modmenu_version}"
+	modImplementation "dev.isxander:yet-another-config-lib:${project.yacl_version}-fabric"
+
+add this to gradle.properties:
+    sidly_api_version=1.0.0
+    modmenu_version = 11.0.0-beta.1
+    yacl_version=3.5.0+1.21
+
+add username and token to \Users\<username>\.gradle\gradle.properties

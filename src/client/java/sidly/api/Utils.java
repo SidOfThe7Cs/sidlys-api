@@ -21,12 +21,17 @@ import sidly.api.mixin.client.GameRendererInvoker;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class Utils {
 
     public static final Identifier MY_HUD_LAYER = Identifier.of("sidly", "hud-layer");
+    protected static final List<Consumer<MinecraftClient>> afterTickCallbacks = new ArrayList<>();
 
+    public static void registerAfterTick(Consumer<MinecraftClient> callback) {
+        afterTickCallbacks.add(callback);
+    }
     //draws line on screen from xy to xy
     public static void drawLine(DrawContext context, Vec2f pos1, Vec2f pos2, float thickness, Color color) {
 

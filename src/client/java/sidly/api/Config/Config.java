@@ -40,6 +40,8 @@ public class Config {
 
     @SerialEntry public static List<TextHudElement> hudElements = new ArrayList<>();
 
+    private static final List<Runnable> saveListeners = new ArrayList<>();
+
     public static void addHudElement(TextHudElement newE){
         for (TextHudElement e : hudElements){
             if (newE.getName().equals(e.getName())) return;
@@ -86,7 +88,7 @@ public class Config {
         builder.category(categoryBuilder.build());
 
         return builder
-                .save(Config.HANDLER::save)
+                .save(Config::save)
                 .build()
                 .generateScreen(parent);
     }
@@ -95,4 +97,22 @@ public class Config {
         if (!categories.containsKey(category)) categories.put(category, new ArrayList<>());
         categories.get(category).add(option);
     }
+
+    public static void save() {
+        HANDLER.save(); // save main config
+
+        // Call all registered save hooks
+        for (Runnable runnable : saveListeners) {
+            runnable.run();
+        }
+    }
+
+    public static void registerSaveCallback(Runnable callback) {
+        saveListeners.add(callback);
+    }
+
+    public static void load() {
+        HANDLER.load();
+    }
+
 }

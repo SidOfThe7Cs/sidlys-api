@@ -13,13 +13,10 @@ import sidly.api.Config.Config;
 public class SidlysApiModClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
+		Config.load();
 		// This entrypoint is suitable for setting up client-specific logic, such as rendering.
-		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
-			Config.HANDLER.save();
-		});
-		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-			Config.HANDLER.save();
-		}));
+		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> Config.save());
+		Runtime.getRuntime().addShutdownHook(new Thread(Config::save));
 
 		HudLayerRegistrationCallback.EVENT.register(layeredDrawer -> layeredDrawer.attachLayerBefore(IdentifiedLayer.CHAT, Utils.MY_HUD_LAYER, this::drawToHud));
 		ClientTickEvents.END_CLIENT_TICK.register(this::onClientTick);

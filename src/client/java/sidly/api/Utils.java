@@ -1,9 +1,6 @@
 package sidly.api;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.ShaderProgram;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.*;
 import net.minecraft.entity.Entity;
@@ -18,23 +15,17 @@ import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
 import org.joml.Matrix4f;
-import org.joml.Vector2d;
-import org.joml.Vector2f;
-import org.joml.Vector3f;
 import sidly.api.mixin.client.EntityAccessor;
 import sidly.api.mixin.client.GameRendererInvoker;
 
 import java.awt.*;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public class Utils {
 
-    public static final Identifier MY_HUD_LAYER = Identifier.of("wynntools", "hud-example-layer");
+    public static final Identifier MY_HUD_LAYER = Identifier.of("sidly", "hud-layer");
 
     //draws line on screen from xy to xy
     public static void drawLine(DrawContext context, Vec2f pos1, Vec2f pos2, float thickness, Color color) {

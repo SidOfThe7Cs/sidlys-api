@@ -95,8 +95,4 @@ public class Config {
         if (!categories.containsKey(category)) categories.put(category, new ArrayList<>());
         categories.get(category).add(option);
     }
-
-    public static Config get() {
-        return HANDLER.instance();
-    }
 }

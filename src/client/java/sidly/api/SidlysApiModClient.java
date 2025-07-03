@@ -10,6 +10,10 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderTickCounter;
 import sidly.api.Config.Config;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+
 public class SidlysApiModClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
@@ -20,15 +24,24 @@ public class SidlysApiModClient implements ClientModInitializer {
 
 		HudLayerRegistrationCallback.EVENT.register(layeredDrawer -> layeredDrawer.attachLayerBefore(IdentifiedLayer.CHAT, Utils.MY_HUD_LAYER, this::drawToHud));
 		ClientTickEvents.END_CLIENT_TICK.register(this::onClientTick);
-		ClientTickEvents.START_CLIENT_TICK.register(this::onStartClientTick);
 	}
 
-	private void onStartClientTick(MinecraftClient client) {
-		DrawQueue.clear();
+	private static final List<Consumer<MinecraftClient>> afterTickCallbacks = new ArrayList<>();
+
+	public static void registerAfterTick(Consumer<MinecraftClient> callback) {
+		afterTickCallbacks.add(callback);
 	}
 
 	private void onClientTick(MinecraftClient client) {
+		// Your logic first
+		DrawQueue.clear(); // For example
+
+		// Then call registered callbacks
+		for (Consumer<MinecraftClient> cb : afterTickCallbacks) {
+			cb.accept(client);
+		}
 	}
+
 
 	private void drawToHud(DrawContext context, RenderTickCounter renderTickCounter) {
 		DrawQueue.render(context);

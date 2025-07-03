@@ -16,7 +16,6 @@ public class DrawQueue {
         for (Consumer<DrawContext> drawCall : queue) {
             drawCall.accept(context);
         }
-        queue.clear();
     }
 
     public static void clear() {

@@ -9,9 +9,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderTickCounter;
 import sidly.api.Config.Config;
-
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Consumer;
 
 public class SidlysApiModClient implements ClientModInitializer {
@@ -28,7 +25,7 @@ public class SidlysApiModClient implements ClientModInitializer {
 
 	private void onClientTick(MinecraftClient client) {
 		// Your logic first
-		DrawQueue.clear(); // For example
+		DrawQueue.clear();
 
 		// Then call registered callbacks
 		for (Consumer<MinecraftClient> cb : Utils.afterTickCallbacks) {

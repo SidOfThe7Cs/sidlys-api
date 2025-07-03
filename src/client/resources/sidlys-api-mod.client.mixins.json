@@ -3,6 +3,8 @@
 	"package": "sidly.api.mixin.client",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
+		"EntityAccessor",
+		"GameRendererInvoker"
 	],
 	"injectors": {
 		"defaultRequire": 1

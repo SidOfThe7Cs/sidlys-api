@@ -15,6 +15,7 @@ public class SidlysApiModClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
 		Config.load();
+		Config.addConfigOptions();
 		// This entrypoint is suitable for setting up client-specific logic, such as rendering.
 		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> Config.save());
 		Runtime.getRuntime().addShutdownHook(new Thread(Config::save));
@@ -31,6 +32,8 @@ public class SidlysApiModClient implements ClientModInitializer {
 		for (Consumer<MinecraftClient> cb : Utils.afterTickCallbacks) {
 			cb.accept(client);
 		}
+
+		mobHighlighter.onClientTick(client);
 	}
 
 

@@ -2,7 +2,6 @@ package sidly.api.Config;
 
 import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.ColorControllerBuilder;
-import dev.isxander.yacl3.api.controller.CyclingListControllerBuilder;
 import dev.isxander.yacl3.api.controller.DropdownStringControllerBuilder;
 import dev.isxander.yacl3.api.controller.TickBoxControllerBuilder;
 import dev.isxander.yacl3.config.v2.api.ConfigClassHandler;
@@ -13,6 +12,7 @@ import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.entity.EntityType;
 import net.minecraft.registry.Registries;
+import net.minecraft.sound.SoundEvent;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.List;
+import java.util.function.IntFunction;
 
 public class Config {
 
@@ -43,10 +44,11 @@ public class Config {
     @SerialEntry public static List<TextHudElement> hudElements = new ArrayList<>();
 
     @SerialEntry public static List<MobHighlight> mobHighlights = new ArrayList<>();
-    public static List<EntityType<?>> allTypes = new ArrayList<>();
 
 
     private static final List<Runnable> saveListeners = new ArrayList<>();
+    private static final List<DynamicOption> dynamicOptions = new ArrayList<>();
+
 
     public static void addHudElement(TextHudElement newE) {
         for (TextHudElement e : hudElements) {
@@ -62,27 +64,20 @@ public class Config {
         return null;
     }
 
-    private static Map<String, List<Option<?>>> categories = new HashMap<>();
+    private static Map<String, List<Option<?>>> groups = new HashMap<>();
 
     public static Screen createConfigScreen(Screen parent) {
 
-        cleanMobHighlightOptions(); // clears all of them from the option screen and all that are empty from mobHighlights
-        mobHighlights.add(new MobHighlight(Color.white, "none"));
-        for (int i = 0; i < mobHighlights.size(); i++) {
-            addModHighlight(i);
-        }
+        // main screen builder
+        YetAnotherConfigLib.Builder builder = YetAnotherConfigLib.createBuilder().title(Text.of("Why are you using the narrator?"));
 
-        YetAnotherConfigLib.Builder builder = YetAnotherConfigLib.createBuilder()
-                .title(Text.of("Why are you using the narrator?"));
+        // Create a group
+        ConfigCategory.Builder settingsCategory = ConfigCategory.createBuilder().name(Text.of("Settings")); // Set the name for the group
 
-        // Create a single category
-        ConfigCategory.Builder categoryBuilder = ConfigCategory.createBuilder()
-                .name(Text.of("Settings")); // Set the name for the category
-
-        // Iterate over all categories
-        for (Map.Entry<String, List<Option<?>>> category : categories.entrySet()) {
-            String name = category.getKey();
-            List<Option<?>> options = category.getValue();
+        // Iterate over all groups
+        for (Map.Entry<String, List<Option<?>>> group : groups.entrySet()) {
+            String name = group.getKey();
+            List<Option<?>> options = group.getValue();
             if (!options.isEmpty()) {
                 OptionGroup.Builder groupBuilder = OptionGroup.createBuilder()
                         .name(Text.of(name));
@@ -93,12 +88,36 @@ public class Config {
                 }
 
                 // Add the group to the category
-                categoryBuilder.group(groupBuilder.build());
+                settingsCategory.group(groupBuilder.build());
             }
         }
 
         // Build the category and add it to the builder
-        builder.category(categoryBuilder.build());
+        builder.category(settingsCategory.build());
+
+
+        ConfigCategory.Builder dynamicOptionsCategory = ConfigCategory.createBuilder().name(Text.of("Dynamic Options"));
+        for (DynamicOption dynamicOption : dynamicOptions) { // for each type of dynamic option
+            dynamicOption.clean(); // removes all blank options then adds one
+            for (int i = 0; i < dynamicOption.getSize(); i++) { // for each option in that type
+                List<Option<?>> options = dynamicOption.getOptions(i); // get the list of each option for that option group
+                OptionGroup.Builder groupBuilder = OptionGroup.createBuilder().name(Text.of(String.valueOf(i))); // create a group for that dynamic option
+                if (!options.isEmpty()) {
+
+                    // Add options to the group
+                    for (Option<?> option : options) {
+                        groupBuilder.option(option);
+                    }
+
+                    // Add the group to the category
+                    dynamicOptionsCategory.group(groupBuilder.build());
+                }
+            }
+        }
+
+        // Build the category and add it to the builder
+        builder.category(dynamicOptionsCategory.build());
+
 
         return builder
                 .save(Config::save)
@@ -107,22 +126,9 @@ public class Config {
     }
 
     public static void addOption(String category, Option<?> option) {
-        if (!categories.containsKey(category)) categories.put(category, new ArrayList<>());
-        categories.get(category).add(option);
+        if (!groups.containsKey(category)) groups.put(category, new ArrayList<>());
+        groups.get(category).add(option);
     }
-
-    public static void cleanMobHighlightOptions() {
-        // Remove options from the config screen itself
-        List<Option<?>> options = categories.get("esp");
-        if (options != null) {
-            options.removeIf(option -> option.name().equals(Text.of("Entity to Highlight")));
-            options.removeIf(option -> option.name().equals(Text.of("color for ^")));
-        }
-
-        // Remove mobHighlights with entityTypeId "none" from the list of saved highlights
-        mobHighlights.removeIf(entry -> "none".equals(entry.getEntityTypeId()));
-    }
-
 
     public static void save() {
         HANDLER.save(); // save main config
@@ -145,15 +151,13 @@ public class Config {
         return HANDLER.instance();
     }
 
-    public static void addConfigOptions() {
-
-        for (EntityType<?> type : Registries.ENTITY_TYPE) {
-            allTypes.add(type);
-        }
+    public static void init() {
+        registerDynamicOption(Config::getMobHighlight, mobHighlights, Config::cleanMobHighlights);
     }
 
-    private static void addModHighlight(int index) {
+    private static List<Option<?>> getMobHighlight(int index) {
         MobHighlight highlight = mobHighlights.get(index);
+        List<Option<?>> options = new ArrayList<>();
         Option<?> option;
 
         option = Option.<String>createBuilder()
@@ -165,15 +169,15 @@ public class Config {
                         highlight::setEntityTypeId
                 )
                 .controller(opt -> DropdownStringControllerBuilder.create(opt)
-                        .values(allTypes.stream()
+                        .values(Registries.ENTITY_TYPE.stream()
                                 .map(type -> Registries.ENTITY_TYPE.getId(type).getPath()) // strip "minecraft:"
                                 .toList())
                 )
                 .build();
-        sidly.api.Config.Config.addOption("esp", option);
+        options.add(option);
 
         option = Option.<Color>createBuilder()
-                .name(Text.of("color for ^"))
+                .name(Text.of("color"))
                 .description(OptionDescription.of(Text.of("")))
                 .binding(
                         highlight.getHighlightColor(),
@@ -182,7 +186,62 @@ public class Config {
                 )
                 .controller(ColorControllerBuilder::create)
                 .build();
-        sidly.api.Config.Config.addOption("esp", option);
+        options.add(option);
+
+        option = Option.<Boolean>createBuilder()
+                .name(Text.of("draw line"))
+                .description(OptionDescription.of(Text.of("")))
+                .binding(
+                        false,
+                        highlight::getDrawLine,
+                        highlight::setDrawLine
+                )
+                .controller(TickBoxControllerBuilder::create)
+                .build();
+        options.add(option);
+
+        option = Option.<Boolean>createBuilder()
+                .name(Text.of("send chat message on spawn"))
+                .description(OptionDescription.of(Text.of("")))
+                .binding(
+                        false,
+                        highlight::getChatNotification,
+                        highlight::setChatNotification
+                )
+                .controller(TickBoxControllerBuilder::create)
+                .build();
+        options.add(option);
+
+        option = Option.<String>createBuilder()
+                .name(Text.of("sound to play on spawn"))
+                .description(OptionDescription.of(Text.of("")))
+                .binding(
+                        "none",
+                        highlight::getSoundEventId,
+                        highlight::setSoundEventId
+                )
+                .controller(opt -> DropdownStringControllerBuilder.create(opt)
+                        .values(Registries.SOUND_EVENT.stream()
+                                .map(type -> {
+                                    Identifier id = Registries.SOUND_EVENT.getId(type);
+                                    if (id != null) return id.getPath();
+                                    else return "none";
+                                })
+                                .toList())
+                )
+                .build();
+        options.add(option);
+
+        return options;
+    }
+
+    private static void cleanMobHighlights(){
+        mobHighlights.removeIf(entry -> "none".equals(entry.getEntityTypeId()));
+        mobHighlights.add(new MobHighlight());
+    }
+
+    public static void registerDynamicOption(IntFunction<List<Option<?>>> getter, List<?> size, Runnable cleanFunc){
+        dynamicOptions.add(new DynamicOption(getter, size, cleanFunc));
     }
 
 }
